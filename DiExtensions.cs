@@ -25,6 +25,12 @@ public static class DiExtensions
         }
     }
 
+    public static void AddPlugin<TApi, TImpl>(this IServiceCollection services, string code)
+        where TApi : class where TImpl : class, TApi
+    {
+        services.AddKeyedTransient<TApi, TImpl>(code);
+    }
+
     public static async Task RunModules(this IServiceProvider services)
     {
         foreach (var module in services.GetServices<IModule>())
