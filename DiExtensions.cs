@@ -21,9 +21,10 @@ public static class DiExtensions
     {
         AddModulesInternal(services, configuration, moduleTypes);
 
-        var dynamicModules = configuration.GetValue<string[]>("Logrus:Ext:DynamicModules");
-        if (dynamicModules == null) return;
-        foreach (var assemblyPath in dynamicModules)
+        var dynamicModules = configuration.GetSection("Logrus:Ext:DynamicModules");
+        if (!dynamicModules.Exists()) return;
+
+        foreach (var assemblyPath in dynamicModules.Get<string[]>() ?? [])
         {
             moduleTypes = AssemblyLoadContext.Default
                 .LoadFromAssemblyPath(assemblyPath)
