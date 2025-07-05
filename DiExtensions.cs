@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Runtime.Loader;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,6 +25,17 @@ public static class DiExtensions
             services.AddSingleton(module);
             module.RegisterServices(services, configuration);
         }
+    }
+
+    public static void AddModules(this IServiceCollection services, IConfiguration configuration, string assemblyPath)
+    {
+        var modules = AssemblyLoadContext.Default
+            .LoadFromAssemblyPath(assemblyPath)
+            .GetTypes()
+            .Where(x => x.IsAssignableTo(typeof(IModule)))
+            .ToArray();
+
+        services.AddModules(configuration, modules);
     }
 
     public static void AddPlugin<TApi, TImpl>(this IServiceCollection services, string code)
