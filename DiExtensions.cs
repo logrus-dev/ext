@@ -19,23 +19,30 @@ public static class DiExtensions
 
     public static void AddModules(this IServiceCollection services, IConfiguration configuration, params Type[] moduleTypes)
     {
+        AddModulesInternal(services, configuration, moduleTypes);
+
+        var dynamicModules = configuration.GetValue<string[]>("Logrus:Ext:DynamicModules");
+        if (dynamicModules == null) return;
+        foreach (var assemblyPath in dynamicModules)
+        {
+            moduleTypes = AssemblyLoadContext.Default
+                .LoadFromAssemblyPath(assemblyPath)
+                .GetTypes()
+                .Where(x => x.IsAssignableTo(typeof(IModule)))
+                .ToArray();
+            AddModulesInternal(services, configuration, moduleTypes);
+        }
+    }
+
+    private static void AddModulesInternal(IServiceCollection services, IConfiguration configuration,
+        Type[] moduleTypes)
+    {
         var modules = moduleTypes.Select(Activator.CreateInstance).Cast<IModule>();
         foreach (var module in modules)
         {
             services.AddSingleton(module);
             module.RegisterServices(services, configuration);
         }
-    }
-
-    public static void AddModules(this IServiceCollection services, IConfiguration configuration, string assemblyPath)
-    {
-        var modules = AssemblyLoadContext.Default
-            .LoadFromAssemblyPath(assemblyPath)
-            .GetTypes()
-            .Where(x => x.IsAssignableTo(typeof(IModule)))
-            .ToArray();
-
-        services.AddModules(configuration, modules);
     }
 
     public static void AddPlugin<TApi, TImpl>(this IServiceCollection services, string code)

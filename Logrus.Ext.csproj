@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
 
         <PackageId>Logrus.Ext</PackageId>
-        <Version>1.0.3</Version>
+        <Version>1.0.4</Version>
         <Authors>ikesler</Authors>
         <Company>logrus.dev</Company>
         <PackageTags>Modules;DI;Extensibility;Plugins</PackageTags>
