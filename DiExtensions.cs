@@ -17,28 +17,35 @@ public static class DiExtensions
         return settings;
     }
 
-    public static void AddModules(this IServiceCollection services, IConfiguration configuration, params Type[] moduleTypes)
+    public static void AddModules(this IServiceCollection services, IConfiguration configuration, params object[] modulesOrTypes)
     {
-        AddModulesInternal(services, configuration, moduleTypes);
+        var arguments = modulesOrTypes.ToList();
 
         var dynamicModules = configuration.GetSection("Logrus:Ext:DynamicModules");
-        if (!dynamicModules.Exists()) return;
-
-        foreach (var assemblyPath in dynamicModules.Get<string[]>() ?? [])
+        if (dynamicModules.Exists())
         {
-            moduleTypes = AssemblyLoadContext.Default
-                .LoadFromAssemblyPath(assemblyPath)
-                .GetTypes()
-                .Where(x => x.IsAssignableTo(typeof(IModule)))
-                .ToArray();
-            AddModulesInternal(services, configuration, moduleTypes);
+            foreach (var assemblyPath in dynamicModules.Get<string[]>() ?? [])
+            {
+                var moduleTypes = AssemblyLoadContext.Default
+                    .LoadFromAssemblyPath(assemblyPath)
+                    .GetTypes()
+                    .Where(x => x.IsAssignableTo(typeof(IModule)))
+                    .ToArray();
+                arguments.AddRange(moduleTypes);
+            }
         }
+
+        var modules = arguments
+            .Select(x => x is Type moduleType ? Activator.CreateInstance(moduleType)! : x)
+            .Cast<IModule>()
+            .Distinct()
+            .ToArray();
+
+        services.AddModules(configuration, modules);
     }
 
-    private static void AddModulesInternal(IServiceCollection services, IConfiguration configuration,
-        Type[] moduleTypes)
+    public static void AddModules(this IServiceCollection services, IConfiguration configuration, params IModule[] modules)
     {
-        var modules = moduleTypes.Select(Activator.CreateInstance).Cast<IModule>();
         foreach (var module in modules)
         {
             services.AddSingleton(module);
