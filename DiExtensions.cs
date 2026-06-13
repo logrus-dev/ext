@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Logrus.Ext;
 
@@ -15,6 +16,11 @@ public static class DiExtensions
         services.AddSingleton(settings);
 
         return settings;
+    }
+
+    public static IHostBuilder AddModules(this IHostBuilder builder, params object[] modulesOrTypes)
+    {
+        return builder.ConfigureServices((ctx, services) => services.AddModules(ctx.Configuration, modulesOrTypes));
     }
 
     public static void AddModules(this IServiceCollection services, IConfiguration configuration, params object[] modulesOrTypes)
@@ -58,6 +64,8 @@ public static class DiExtensions
     {
         services.AddKeyedTransient<TApi, TImpl>(code);
     }
+
+    public static Task RunModules(this IHost host) => host.Services.RunModules();
 
     public static async Task RunModules(this IServiceProvider services)
     {
