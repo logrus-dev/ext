@@ -6,14 +6,14 @@
         <Nullable>enable</Nullable>
 
         <PackageId>Logrus.Ext</PackageId>
-        <Version>1.0.10</Version>
+        <Version>1.0.11</Version>
         <Authors>ikesler</Authors>
         <Company>logrus.dev</Company>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageTags>Modules;DI;Extensibility;Plugins</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <ProjectUrl>https://github.com/logrus-dev/ext</ProjectUrl>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
     <ItemGroup>
