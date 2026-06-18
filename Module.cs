@@ -11,6 +11,7 @@ public class Module: IModule
     {
         services.AddTransient(typeof(IPluginCollection<>), typeof(PluginCollection<>));
         services.AddSingleton(new PluginRegistry());
+        services.AddDynamicModules(configuration);
     }
 
     public Task RunServices(IServiceProvider services) => Task.CompletedTask;

@@ -44,25 +44,27 @@ public static class DiExtensions
         return builder.ConfigureServices((ctx, services) => services.AddModules(ctx.Configuration, modulesOrTypes));
     }
 
-    public static IServiceCollection AddModules(this IServiceCollection services, IConfiguration configuration, params object[] modulesOrTypes)
+    internal static IServiceCollection AddDynamicModules(this IServiceCollection services, IConfiguration configuration)
     {
-        var arguments = modulesOrTypes.ToList();
-
         var dynamicModules = configuration.GetSection("Logrus:Ext:DynamicModules");
+        var moduleTypes = new List<Type>();
         if (dynamicModules.Exists())
         {
             foreach (var assemblyPath in dynamicModules.Get<string[]>() ?? [])
             {
-                var moduleTypes = AssemblyLoadContext.Default
+                moduleTypes.AddRange(AssemblyLoadContext.Default
                     .LoadFromAssemblyPath(assemblyPath)
                     .GetTypes()
-                    .Where(x => x.IsAssignableTo(typeof(IModule)))
-                    .ToArray();
-                arguments.AddRange(moduleTypes);
+                    .Where(x => x.IsAssignableTo(typeof(IModule))));
             }
         }
+        services.AddModules(configuration, moduleTypes);
+        return services;
+    }
 
-        var modules = arguments
+    public static IServiceCollection AddModules(this IServiceCollection services, IConfiguration configuration, params object[] modulesOrTypes)
+    {
+        var modules = modulesOrTypes
             .Select(x => x is Type moduleType ? Activator.CreateInstance(moduleType)! : x)
             .Cast<IModule>()
             .Distinct()
