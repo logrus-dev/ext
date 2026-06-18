@@ -31,47 +31,53 @@ public static class DiExtensions
 
     public static IHostBuilder AddModule<TModule>(this IHostBuilder builder) where TModule : IModule
     {
-        return builder.AddModules(typeof(TModule));
+        return builder.AddModule(typeof(TModule));
     }
 
     public static IServiceCollection AddModule<TModule>(this IServiceCollection services, IConfiguration configuration) where TModule : IModule
     {
-        return services.AddModules(configuration, typeof(TModule));
-    }
-
-    public static IHostBuilder AddModules(this IHostBuilder builder, params object[] modulesOrTypes)
-    {
-        return builder.ConfigureServices((ctx, services) => services.AddModules(ctx.Configuration, modulesOrTypes));
+        return services.AddModule(configuration, typeof(TModule));
     }
 
     internal static IServiceCollection AddDynamicModules(this IServiceCollection services, IConfiguration configuration)
     {
         var dynamicModules = configuration.GetSection("Logrus:Ext:DynamicModules");
-        var moduleTypes = new List<Type>();
         if (dynamicModules.Exists())
         {
             foreach (var assemblyPath in dynamicModules.Get<string[]>() ?? [])
             {
-                moduleTypes.AddRange(AssemblyLoadContext.Default
+                var moduleTypes = AssemblyLoadContext.Default
                     .LoadFromAssemblyPath(assemblyPath)
                     .GetTypes()
-                    .Where(x => x.IsAssignableTo(typeof(IModule))));
+                    .Where(x => x.IsAssignableTo(typeof(IModule)));
+                foreach (var moduleType in moduleTypes)
+                {
+                    services.AddModule(configuration, moduleType);
+                }
             }
         }
-        services.AddModules(configuration, moduleTypes);
         return services;
     }
 
-    public static IServiceCollection AddModules(this IServiceCollection services, IConfiguration configuration, params object[] modulesOrTypes)
+    public static IHostBuilder AddModule(this IHostBuilder builder, Type moduleType)
     {
-        var modules = modulesOrTypes
-            .Select(x => x is Type moduleType ? Activator.CreateInstance(moduleType)! : x)
-            .Cast<IModule>()
-            .Distinct()
-            .ToArray();
+        builder.ConfigureServices((ctx, services) => services.AddModule(ctx.Configuration, moduleType));
 
-        services.AddModules(configuration, modules);
+        return builder;
+    }
+
+    public static IServiceCollection AddModule(this IServiceCollection services, IConfiguration configuration, Type moduleType)
+    {
+        var module = (IModule) (Activator.CreateInstance(moduleType) ?? throw new NullReferenceException($"Could not create an instance of {moduleType.FullName}"));
+
+        services.AddModule(configuration, module);
         return services;
+    }
+
+    public static IHostBuilder AddModules(this IHostBuilder builder, params IModule[] modules)
+    {
+        builder.ConfigureServices((ctx, services) => services.AddModules(ctx.Configuration, modules));
+        return builder;
     }
 
     public static IServiceCollection AddModules(this IServiceCollection services, IConfiguration configuration, params IModule[] modules)
