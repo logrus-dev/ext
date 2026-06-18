@@ -1,5 +1,5 @@
-using System.Reflection;
 using System.Runtime.Loader;
+using Logrus.Ext.Impl;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -8,14 +8,35 @@ namespace Logrus.Ext;
 
 public static class DiExtensions
 {
-    public static TSetting AddSettings<TSetting>(this IServiceCollection services, IConfiguration configuration)
+    public static TSetting AddSettings<TSetting>(this IServiceCollection services, IConfiguration configuration, string prefix = "")
         where TSetting : class
     {
-        var settings = configuration.GetRequiredSection(typeof(TSetting).Name).Get<TSetting>()
+        var settings = configuration.GetRequiredSection(prefix + typeof(TSetting).Name).Get<TSetting>()
+            ?? configuration.GetRequiredSection(prefix + ":" + typeof(TSetting).Name).Get<TSetting>()
             ?? throw new ArgumentException($"Settings not found: {typeof(TSetting)}");
         services.AddSingleton(settings);
 
         return settings;
+    }
+
+    public static IServiceCollection AddModule(this IServiceCollection services, IConfiguration configuration, IModule module)
+    {
+        return services.AddModules(configuration, module);
+    }
+
+    public static IHostBuilder AddModule(this IHostBuilder builder, IModule module)
+    {
+        return builder.AddModules(module);
+    }
+
+    public static IHostBuilder AddModule<TModule>(this IHostBuilder builder) where TModule : IModule
+    {
+        return builder.AddModules(typeof(TModule));
+    }
+
+    public static IServiceCollection AddModule<TModule>(this IServiceCollection services, IConfiguration configuration) where TModule : IModule
+    {
+        return services.AddModules(configuration, typeof(TModule));
     }
 
     public static IHostBuilder AddModules(this IHostBuilder builder, params object[] modulesOrTypes)
@@ -23,7 +44,7 @@ public static class DiExtensions
         return builder.ConfigureServices((ctx, services) => services.AddModules(ctx.Configuration, modulesOrTypes));
     }
 
-    public static void AddModules(this IServiceCollection services, IConfiguration configuration, params object[] modulesOrTypes)
+    public static IServiceCollection AddModules(this IServiceCollection services, IConfiguration configuration, params object[] modulesOrTypes)
     {
         var arguments = modulesOrTypes.ToList();
 
@@ -48,21 +69,29 @@ public static class DiExtensions
             .ToArray();
 
         services.AddModules(configuration, modules);
+        return services;
     }
 
-    public static void AddModules(this IServiceCollection services, IConfiguration configuration, params IModule[] modules)
+    public static IServiceCollection AddModules(this IServiceCollection services, IConfiguration configuration, params IModule[] modules)
     {
         foreach (var module in modules)
         {
             services.AddSingleton(module);
             module.RegisterServices(services, configuration);
         }
+        return services;
     }
 
-    public static void AddPlugin<TApi, TImpl>(this IServiceCollection services, string code)
+    public static IServiceCollection AddPlugin<TApi, TImpl>(this IServiceCollection services, string code)
         where TApi : class where TImpl : class, TApi
     {
+        var registryDescriptor = services.Single(x => x.ServiceType == typeof(PluginRegistry));
+
+        var registry = (PluginRegistry) (registryDescriptor.ImplementationInstance ?? throw new NullReferenceException("Plugin registry is missing in service collection."));
+
         services.AddKeyedTransient<TApi, TImpl>(code);
+        registry.Add(code, typeof(TApi));
+        return services;
     }
 
     public static Task RunModules(this IHost host) => host.Services.RunModules();

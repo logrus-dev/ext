@@ -36,6 +36,8 @@ await using var serviceProvider = services.BuildServiceProvider();
 await serviceProvider.RunModules();
 ```
 
+Plugins can be loaded dynamically. Calling `AddModules` with any parameter or without parameters at all enables this behavior. Dynamic loading locations are managed by configuration `Logrus:Ext:DynamicModules` - an array of string, the assembly paths to dynamically load and scan for modules.
+
 ## Plugins
 
 Plugin - a service which has multiple implementations and one of them is used depending on some conditions. Pretty much an implementation of [Plugin pattern](https://martinfowler.com/eaaCatalog/plugin.html).

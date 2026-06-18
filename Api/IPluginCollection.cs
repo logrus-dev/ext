@@ -1,6 +1,6 @@
 namespace Logrus.Ext.Api;
 
-public interface IPluginCollection<out T>
+public interface IPluginCollection<T> : IReadOnlyDictionary<string, T>
 {
-    T this[string code] { get; }
+
 }
