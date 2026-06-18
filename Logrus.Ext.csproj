@@ -6,7 +6,9 @@
         <Nullable>enable</Nullable>
 
         <PackageId>Logrus.Ext</PackageId>
-        <Version>1.0.11</Version>
+        <Version>1.0.13</Version>
+        <AssemblyVersion>$(Version).0</AssemblyVersion>
+        <FileVersion>$(Version).0</FileVersion>
         <Authors>ikesler</Authors>
         <Company>logrus.dev</Company>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -26,4 +28,12 @@
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
     </ItemGroup>
+
+    <Target Name="ValidatePackedAssemblyVersion" BeforeTargets="GenerateNuspec" Condition="Exists('$(TargetPath)')">
+      <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+        <Output TaskParameter="Assemblies" ItemName="_PackedAssemblyIdentity" />
+      </GetAssemblyIdentity>
+      <Error Condition="'%(_PackedAssemblyIdentity.Version)' != '$(AssemblyVersion)'"
+             Text="Refusing to pack stale assembly at $(TargetPath): assembly version '%(_PackedAssemblyIdentity.Version)' does not match expected version '$(AssemblyVersion)'. Run 'dotnet clean' and rebuild before packing." />
+    </Target>
 </Project>
