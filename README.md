@@ -29,13 +29,6 @@ await using var serviceProvider = services.BuildServiceProvider();
 await serviceProvider.RunModules();
 ```
 
-Optionally, modules can be _run_. This is suitable for all kinds of startup logic, e.g., cache warmup or DB migrations.
-
-```
-await using var serviceProvider = services.BuildServiceProvider();
-await serviceProvider.RunModules();
-```
-
 Plugins can be loaded dynamically. Dynamic loading locations are managed by configuration `Logrus:Ext:DynamicModules` - an array of string, the assembly paths to dynamically load and scan for modules.
 
 ## Plugins

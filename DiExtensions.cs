@@ -85,6 +85,7 @@ public static class DiExtensions
         foreach (var module in modules)
         {
             services.AddSingleton(module);
+            services.AddSingleton(module.GetType(), module);
             module.RegisterServices(services, configuration);
         }
         return services;
@@ -100,15 +101,5 @@ public static class DiExtensions
         services.AddKeyedTransient<TApi, TImpl>(code);
         registry.Add(code, typeof(TApi));
         return services;
-    }
-
-    public static Task RunModules(this IHost host) => host.Services.RunModules();
-
-    public static async Task RunModules(this IServiceProvider services)
-    {
-        foreach (var module in services.GetServices<IModule>())
-        {
-            await module.RunServices(services);
-        }
     }
 }

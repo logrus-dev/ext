@@ -9,6 +9,7 @@ public class Module: IModule
 {
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddHostedService<ModuleRunnerHostedService>();
         services.AddTransient(typeof(IPluginCollection<>), typeof(PluginCollection<>));
         services.AddSingleton(new PluginRegistry());
         services.AddDynamicModules(configuration);
